@@ -1,0 +1,56 @@
+name: Release SDK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build and test tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+          pip install build twine
+
+      - name: Run tests
+        run: |
+          pytest -q tests
+
+      - name: Build distributions
+        run: |
+          python -m build
+          python -m twine check dist/*
+
+      - name: Generate checksums
+        run: |
+          sha256sum dist/* > dist/SHA256SUMS.txt
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/SHA256SUMS.txt

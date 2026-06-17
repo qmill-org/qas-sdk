@@ -1,0 +1,153 @@
+# External QMill Circuit Compression API examples
+
+These examples show how to use QMill Circuit Compression with direct HTTP calls and with the Python SDK. They assume
+you have a QAS user account authenticated with the `qas auth login` CLI flow, plus network access to the target QAS
+environment.
+
+## Prerequisites
+
+- Python 3.10+
+- `git`
+- QAS base URL (`https://qas.qmill.com`)
+- QAS CLI login session (`qas auth login`)
+
+## Install the SDK
+
+Install from PyPI:
+
+```bash
+pip install qas-sdk
+```
+
+Or install from source:
+
+```bash
+# Clone the repository and enter it
+$ git clone https://github.com/qmill-org/qas-sdk.git
+$ cd qas-sdk
+
+# Install SDK in editable mode with development extras
+$ pip install -e .[dev]
+
+# Install Jupyter for notebook runs (optional)
+$ pip install jupyter
+```
+
+> **Tip:** You can also install straight from Git using a single command:
+>
+> ```bash
+> pip install "git+https://github.com/qmill-org/qas-sdk.git"
+> ```
+
+## Configure Environment Variables
+
+Create a `.env` file or export the following before running the examples:
+
+```bash
+cp examples/.env.example .env
+```
+
+```bash
+export QAS_BASE_URL=https://qas.qmill.com
+# Optional compression overrides (forwarded via SDK)
+# export QAS_NUM_GPUS=1
+# export QAS_ITERATION_MINUTES=45
+# export QAS_GATE_SET="IBM-Eagle"
+# export QAS_HPC_MODE="demo"
+```
+
+## Available Examples
+
+- `compression_golden_path.py` - recommended pilot-customer flow that submits a job, polls status,
+  and persists the full final payload.
+- `sdk_walkthrough.py` - SDK-only Python script for submit, wait, and final payload retrieval.
+- `sdk_walkthrough.ipynb` - notebook version of the SDK-only flow for interactive exploration.
+- `sdk_and_api_walkthrough.py` — end-to-end Python script using both the SDK and raw REST calls.
+- `sdk_and_api_walkthrough.ipynb` — notebook variant with the same flow and rich output.
+- `api_walkthrough.py` — REST-only Python script for submitting and polling compression jobs
+  without the SDK.
+- `api_walkthrough.ipynb` — notebook version of the REST-only flow for interactive exploration.
+
+All examples authenticate via the local CLI session (`qas auth login`) and submit a compression job.
+
+- SDK-only flows: `sdk_walkthrough.py`, `sdk_walkthrough.ipynb`
+- API-only flows: `compression_golden_path.py`, `api_walkthrough.py`, `api_walkthrough.ipynb`
+- Mixed SDK+API parity flows: `sdk_and_api_walkthrough.py`, `sdk_and_api_walkthrough.ipynb` (optional, useful for verification/migration)
+
+## Golden-path script (recommended)
+
+Run from the repository root:
+
+```bash
+python examples/compression_golden_path.py \
+  --base-url https://qas.qmill.com \
+  --circuit-file ./example.qasm \
+  --poll-interval 5 \
+  --timeout-seconds 7200 \
+  --output-json ./final-job.json
+```
+
+Authentication is loaded from your local `qas auth login` session.
+
+Optional compression overrides:
+
+```bash
+python examples/compression_golden_path.py \
+  --base-url https://qas.qmill.com \
+  --circuit-file ./example.qasm \
+  --num-gpus 1 \
+  --iteration-time-minutes 45 \
+  --gate-set IBM-Eagle \
+  --hpc-mode lumi_v1_6
+```
+
+Pass additional request fields with repeatable `--set key=value` flags.
+
+## Running the Python Script
+
+```bash
+cd examples
+python sdk_walkthrough.py
+```
+
+### Running the SDK+API Script
+
+```bash
+cd examples
+python sdk_and_api_walkthrough.py
+```
+
+The script prints SDK responses, the compressed circuit, and the raw JSON fetched via `requests`.
+
+### Running the API-Only Script
+
+```bash
+cd examples
+python api_walkthrough.py
+```
+
+Ensure `qas auth login --base-url https://qas.qmill.com` has completed successfully.
+
+## Running the Notebook
+
+```bash
+$ jupyter notebook examples/sdk_and_api_walkthrough.ipynb
+# or for the SDK-only notebook
+$ jupyter notebook examples/sdk_walkthrough.ipynb
+# or for the REST-only notebook
+$ jupyter notebook examples/api_walkthrough.ipynb
+```
+
+If you prefer uv, equivalent commands with `uv run` also work.
+
+Follow the instructions in the first cell of the chosen notebook to confirm your environment
+variables and run each cell in order.
+
+## Troubleshooting
+
+- **Authentication errors:** Confirm your user account is active in QAS, then re-run
+  `qas auth login --base-url <your_qas_url>`.
+- **Connection errors:** Ensure your environment can reach the QAS base URL and that any required VPN is connected.
+- **HTTP 403/404:** Verify that the job ID exists and that your user account has permission to read it.
+
+For additional details, consult the SDK README in the repository root or contact QMill support.
