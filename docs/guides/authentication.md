@@ -6,6 +6,10 @@ This guide explains public authentication options for the QAS SDK and API.
 
 QAS uses Keycloak-issued OAuth2/OIDC access tokens (`Bearer` tokens).
 
+If you do not yet have QAS access, register first:
+
+- https://qmill.com/en/qas-registration
+
 ## External SDK/API authentication
 
 External users should authenticate with the QAS CLI device-code flow.
@@ -27,6 +31,12 @@ Use the supported public method:
 
 ```bash
 qas auth login
+```
+
+In headless or minimal Linux environments where automatic browser opening is unavailable, use:
+
+```bash
+qas auth login --no-browser
 ```
 
 2. Verify local session status:

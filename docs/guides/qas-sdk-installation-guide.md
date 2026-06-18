@@ -8,19 +8,16 @@ This guide explains how to install and use the QAS SDK.
 - QAS user account.
 - QAS CLI installed (for device-code login).
 
+If you do not yet have QAS access, register at:
+
+- https://qmill.com/en/qas-registration
+
 ## Install the client library
 
 ### Install from PyPI (recommended)
 
 ```bash
 pip install qas-sdk
-```
-
-### Install from a wheel (fallback)
-
-```bash
-wget https://github.com/qmill-org/qas-sdk/releases/download/v0.1.4/qas_sdk-0.1.4-py3-none-any.whl
-pip install qas_sdk-0.1.4-py3-none-any.whl
 ```
 
 ### Install from the repository
@@ -38,10 +35,32 @@ Authenticate with the CLI device-code flow. For details, see
 qas auth login
 ```
 
+If automatic browser launch is not supported in your environment, run:
+
+```bash
+qas auth login --no-browser
+```
+
 Optional: verify current session state:
 
 ```bash
 qas auth status
+```
+
+## Optional: running in qBraid Lab
+
+If you opened this repository through qBraid Explore, install dependencies in
+your Lab environment and run the same authentication steps above:
+
+```bash
+pip install qas-sdk
+qas auth login --base-url https://qas.qmill.com
+```
+
+In headless/minimal environments, use:
+
+```bash
+qas auth login --base-url https://qas.qmill.com --no-browser
 ```
 
 ## Quick start

@@ -2,19 +2,23 @@
 
 Python client library for the QAS Circuit Compression API.
 
+This repository is intended for any developer using QAS, whether locally,
+in notebooks, or in hosted environments such as qBraid Lab.
+
+## Get Access to QAS
+
+To use the SDK against a QAS environment, you need QAS access.
+
+If you do not yet have access, register here:
+
+- https://qmill.com/en/qas-registration
+
 ## Installation
 
 ### From PyPI (Recommended)
 
 ```bash
 pip install qas-sdk
-```
-
-### From Wheel (Fallback)
-
-```bash
-wget https://github.com/qmill-org/qas-sdk/releases/download/v0.1.4/qas_sdk-0.1.4-py3-none-any.whl
-pip install qas_sdk-0.1.4-py3-none-any.whl
 ```
 
 ### From Git
@@ -27,6 +31,29 @@ pip install git+https://github.com/qmill-org/qas-sdk.git
 
 ```bash
 pip install -e .
+```
+
+## Launch on qBraid Lab (Optional)
+
+If this repository is launched from qBraid Explore, it is cloned into your Lab
+workspace. Then:
+
+1. Install the SDK:
+
+```bash
+pip install qas-sdk
+```
+
+2. Authenticate:
+
+```bash
+qas auth login --base-url https://qas.qmill.com
+```
+
+For headless/minimal environments, use:
+
+```bash
+qas auth login --base-url https://qas.qmill.com --no-browser
 ```
 
 ## Quick Start
@@ -88,6 +115,12 @@ Login once and persist your session locally:
 
 ```bash
 qas auth login --base-url https://qas.qmill.com
+```
+
+If you are on a headless/minimal Linux environment (no desktop browser integration), use:
+
+```bash
+qas auth login --base-url https://qas.qmill.com --no-browser
 ```
 
 Then create a client without passing tokens:
