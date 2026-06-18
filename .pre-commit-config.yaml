@@ -23,7 +23,7 @@ repos:
     rev: v0.15.8
     hooks:
       - id: ruff-check
-        args: [--fix, --select, "E,F,I"]
+        args: [--fix, --select, "E,F,I", --ignore, "E501"]
         types_or: [python, pyi]
       - id: ruff-format
         types_or: [python, pyi]

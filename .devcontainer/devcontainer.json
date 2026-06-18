@@ -1,15 +1,7 @@
 {
     "name": "QAS SDK Dev Container",
     "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
-    "features": {
-        "ghcr.io/devcontainers/features/common-utils:2": {
-            "installZsh": false,
-            "username": "qdev",
-            "userUid": "1000",
-            "userGid": "1000"
-        }
-    },
-    "remoteUser": "qdev",
+    "remoteUser": "vscode",
     "customizations": {
         "vscode": {
             "settings": {
