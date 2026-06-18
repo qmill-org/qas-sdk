@@ -72,30 +72,47 @@ qas auth login --base-url https://qas.qmill.com --no-browser
 ## Quick Start
 
 ```python
-from qas_sdk import QASClient
+from qas_sdk import CompressionJobOptions, QASClient
 
-# Recommended: login once with CLI, then construct client without tokens.
+# Preferred auth flow: login once with CLI, then construct client without tokens.
 #   qas auth login --base-url https://qas.qmill.com
 client = QASClient(
     base_url="https://qas.qmill.com",
 )
 
-# Submit circuit for compression
+# Submit a small demo-mode compression job
 circuit = """OPENQASM 2.0;
 include "qelib1.inc";
-qreg q[3];
-creg c[3];
-h q[0];
-cx q[0], q[1];
-measure q -> c;"""
+qreg q[4];
+x q[0];
+x q[0];
+h q[1];
+h q[1];
+cx q[0],q[2];
+cx q[0],q[2];
+rz(pi/4) q[3];
+rz(-pi/4) q[3];"""
 
-job = client.submit_compression(circuit)
+job = client.submit_compression(
+    circuit,
+    options=CompressionJobOptions(
+        hpc_mode="demo",
+        gate_set="IBM-Eagle",
+    ),
+)
 print(f"Job ID: {job['job_id']}")
 
-# Wait for completion
+# Wait for completion (demo mode is suitable for blocking quick starts)
 result = client.wait_for_job(job["job_id"])
 print(f"Compressed circuit: {result['result']}")
 ```
+
+In `demo` mode, the backend still requires and validates your `circuit` payload
+(valid OpenQASM, minimum qubit constraints), but the returned compression output
+is mock/demo output rather than a real HPC optimization result.
+
+For real HPC runs, prefer submit-first workflows and fetch status/results later.
+See `examples/compression_golden_path.py` for that pattern.
 
 ## Features
 
