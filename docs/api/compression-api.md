@@ -83,11 +83,24 @@ Current constraints:
   - In real HPC modes, values greater than `1` are used only when
     the account has multi-GPU entitlement; otherwise, the API
     returns `403`.
+  - In practice, free-tier accounts should submit with `num_gpus = 1`.
+    For widest compatibility, use non-parallel real modes (`lumi_v1_6`
+    or `aws_v1_6`) unless your account has explicit multi-GPU entitlement.
 - `iteration_time_minutes`:
   - Default is `60`.
   - Public API enforces a maximum value of `360` (6 hours).
   - The value is passed through to backend submission
     and used in credit estimation.
+
+Plan and entitlement behavior (production backend):
+
+- Multi-GPU entitlement is required when `num_gpus > 1` in real HPC modes.
+- Entitlement is granted when either:
+  - billing tier is monthly paid, or
+  - PAYG credits are available.
+- If entitlement is missing, submit returns `403` with an entitlement message.
+- Parallel mode slugs (`lumi_v1_6_parallel`, `aws_v1_6_parallel`) are real,
+  billable modes; for free-tier onboarding, prefer single-GPU non-parallel modes.
 
 Example request:
 
@@ -120,6 +133,27 @@ Error responses:
 - `402`: Insufficient credits
 - `403`: Entitlement restriction (for example multi-GPU not allowed)
 - `500`: Backend submission failed
+
+### Credit usage and charging
+
+Compression credit estimate is calculated server-side from circuit complexity and
+requested runtime parameters. In production, the estimate uses:
+
+- base component
+- qubit component
+- gate component
+- GPU component (scales with effective GPU count)
+- iteration component (scales in blocks of iteration minutes)
+- minimum per-job floor
+
+Charging lifecycle:
+
+- On submit (`POST /jobs`), `credit_estimate` is returned and reservation/capacity checks apply.
+- On terminal success (`COMPLETED`, and backend-internal stopped completions),
+  final charge is settled and returned as `credits_charged` in job payload.
+- On terminal failure/cancel (`FAILED`/`CANCELLED`), reserved credits are released
+  and no completion charge is applied.
+- `remaining_credits` reflects available balance after reservation/settlement state.
 
 Example curl:
 
