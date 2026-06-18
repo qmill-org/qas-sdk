@@ -1,6 +1,7 @@
 import subprocess
 
 import pytest
+
 from examples import sdk_and_api_walkthrough as walkthrough
 
 

@@ -44,3 +44,7 @@ scripts.qas = "qas_sdk.cli:main"
 package-data.qas_sdk = [ "py.typed" ]
 packages.find.where = [ "." ]
 packages.find.include = [ "qas_sdk*" ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

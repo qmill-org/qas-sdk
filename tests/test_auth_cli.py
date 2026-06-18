@@ -5,9 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from qas_sdk.auth import load_auth_state, save_auth_state
-
 from qas_sdk import cli
+from qas_sdk.auth import load_auth_state, save_auth_state
 
 UTC_TZ = timezone(timedelta(0))
 
