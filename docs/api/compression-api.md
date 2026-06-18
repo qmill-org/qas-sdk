@@ -265,9 +265,20 @@ Use the golden-path script in `examples/compression_golden_path.py`.
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
   --circuit-file ./examples/example.qasm \
+  --gate-set IBM-Eagle \
   --poll-interval 5 \
   --timeout-seconds 7200 \
   --output-json ./final-job.json
+```
+
+For long-running real HPC jobs, submit first and poll later with:
+
+```bash
+python examples/compression_golden_path.py \
+  --base-url https://qas.qmill.com \
+  --circuit-file ./examples/example.qasm \
+  --gate-set IBM-Eagle \
+  --submit-only
 ```
 
 ## Support

@@ -35,7 +35,7 @@ def _optional_int(name: str) -> int | None:
 def _normalized_gate_set_from_env() -> str | None:
     raw = os.getenv("QAS_GATE_SET")
     if raw is None:
-        return None
+        return DEFAULT_GATE_SET
     value = raw.strip()
     return value if value else DEFAULT_GATE_SET
 

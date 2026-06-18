@@ -89,10 +89,13 @@ Run from the repository root:
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
   --circuit-file ./examples/example.qasm \
+  --gate-set IBM-Eagle \
   --poll-interval 5 \
   --timeout-seconds 7200 \
   --output-json ./final-job.json
 ```
+
+If `--gate-set` is omitted, the script defaults to `IBM-Eagle`.
 
 Authentication is loaded from your local `qas auth login` session.
 
@@ -109,6 +112,16 @@ python examples/compression_golden_path.py \
 ```
 
 For free-plan accounts, keep `--num-gpus 1` and avoid parallel mode slugs.
+
+For long-running real HPC jobs, you can submit without waiting and poll later:
+
+```bash
+python examples/compression_golden_path.py \
+  --base-url https://qas.qmill.com \
+  --circuit-file ./examples/example.qasm \
+  --gate-set IBM-Eagle \
+  --submit-only
+```
 
 Pass additional request fields with repeatable `--set key=value` flags.
 

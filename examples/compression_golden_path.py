@@ -21,6 +21,7 @@ import requests
 
 TERMINAL_STATUSES = {"COMPLETED", "FAILED", "CANCELLED"}
 DEFAULT_BASE_URL = "https://qas.qmill.com"
+DEFAULT_GATE_SET = "IBM-Eagle"
 
 
 def _resolve_token(args: argparse.Namespace) -> str:
@@ -101,6 +102,12 @@ def _load_submit_payload(args: argparse.Namespace) -> dict[str, Any]:
         msg = "Submit payload must include the 'circuit' field."
         raise RuntimeError(msg)
 
+    raw_gate_set = payload.get("gate_set")
+    if raw_gate_set is None:
+        payload["gate_set"] = DEFAULT_GATE_SET
+    elif isinstance(raw_gate_set, str) and not raw_gate_set.strip():
+        payload["gate_set"] = DEFAULT_GATE_SET
+
     return payload
 
 
@@ -121,13 +128,34 @@ def _request_with_retry(
     attempt = 0
     while True:
         attempt += 1
-        response = requests.request(
-            method,
-            url,
-            headers=headers,
-            json=json_payload,
-            timeout=timeout,
-        )
+        try:
+            response = requests.request(
+                method,
+                url,
+                headers=headers,
+                json=json_payload,
+                timeout=timeout,
+            )
+        except requests.exceptions.Timeout:
+            if attempt > retries:
+                raise
+            sleep_seconds = min(30.0, 1.5**attempt)
+            print(
+                f"Timeout from {url}; retrying in {sleep_seconds:.1f}s "
+                f"(attempt {attempt}/{retries})"
+            )
+            time.sleep(sleep_seconds)
+            continue
+        except requests.exceptions.RequestException:
+            if attempt > retries:
+                raise
+            sleep_seconds = min(30.0, 1.5**attempt)
+            print(
+                f"Transient request error from {url}; retrying in {sleep_seconds:.1f}s "
+                f"(attempt {attempt}/{retries})"
+            )
+            time.sleep(sleep_seconds)
+            continue
 
         if response.status_code not in {429, 500, 502, 503, 504}:
             return response
@@ -170,6 +198,11 @@ def main() -> int:
     parser.add_argument("--http-timeout", type=int, default=30)
     parser.add_argument("--retry-count", type=int, default=5)
     parser.add_argument("--output-json", help="Write final job payload to file")
+    parser.add_argument(
+        "--submit-only",
+        action="store_true",
+        help="Submit the job and exit without polling for completion",
+    )
 
     args = parser.parse_args()
 
@@ -215,6 +248,10 @@ def main() -> int:
     if not job_id:
         print("Submit response did not contain job_id.", file=sys.stderr)
         return 1
+
+    if args.submit_only:
+        print("Submit-only mode enabled; skipping polling.")
+        return 0
 
     poll_url = f"{base_url}/api/public/v1/circuit-compression/jobs/{job_id}"
     print(f"\nPolling {poll_url}")
