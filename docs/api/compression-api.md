@@ -258,8 +258,6 @@ Example response (`200 OK`):
 
 Preferred endpoint: `POST /api/public/v1/circuit-compression/jobs/{job_id}/stop`
 
-Backward-compatible endpoint: `DELETE /api/public/v1/circuit-compression/jobs/{job_id}`
-
 Headers:
 
 - `Authorization: Bearer <token>`
@@ -267,10 +265,19 @@ Headers:
 Behavior:
 
 - Intended for jobs in `SUBMITTED` or `RUNNING` state.
+- Use this when current compression quality is already good enough and you do not
+  want to spend more iteration time/credits.
 - Returns acknowledgement payload with status and backend job id when available.
+- Stop attempts to preserve the best currently available output from the active
+  run instead of continuing optimization iterations.
 - For public responses, stopped jobs are surfaced as `COMPLETED`.
 - If no partial/final result exists at stop time, `result` in subsequent
   `GET /jobs/{job_id}` responses can be `null`.
+
+Recommended follow-up:
+
+- After stop acknowledgement, call `GET /api/public/v1/circuit-compression/jobs/{job_id}`
+  to fetch the latest available result payload.
 
 Example stop request:
 
@@ -296,7 +303,7 @@ Error responses:
 - `403`: Job does not belong to authenticated user
 - `404`: Job not found
 - `429`: Rate limit exceeded
-- `500`: Backend stop/cancel operation failed
+- `500`: Backend stop operation failed
 
 ### Polling and retries
 

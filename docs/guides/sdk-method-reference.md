@@ -14,10 +14,37 @@ see [Compression API](../api/compression-api.md).
 | `get_compression_job(job_id)` | Fetch one job state/results | Job payload |
 | `list_compression_jobs(limit=50)` | List user jobs | `list[dict]` job summaries |
 | `wait_for_job(job_id, poll_interval=5, timeout=None, callback=None)` | Poll until terminal status | Final job payload |
-| `stop_compression_job(job_id)` | Stop/cancel an active job | Acknowledgement payload |
+| `stop_compression_job(job_id)` | Stop an active job and keep best available current output | Acknowledgement payload |
 | `cancel_compression_job(job_id)` | Alias for stop method | Acknowledgement payload |
 | `get_hpc_mode()` | Current mode and available modes | Mode payload |
 | `list_hpc_modes()` | Available mode list only | `list[dict]` |
+
+## Stopping early with best-so-far results
+
+Use `stop_compression_job(job_id)` when:
+
+- the current output quality already meets your target, or
+- you want to stop further iteration time and credit usage.
+
+Typical pattern:
+
+1. Submit job.
+2. Track status/logs.
+3. Stop when quality is sufficient.
+4. Fetch the latest job payload and read `result`.
+
+```python
+job = client.submit_compression(circuit_text, options=options)
+job_id = job["job_id"]
+
+# ... some monitoring/checking period ...
+client.stop_compression_job(job_id)
+
+latest = client.get_compression_job(job_id)
+best_result = latest.get("result")
+```
+
+Note: in public API semantics, stopped jobs are surfaced as `COMPLETED`.
 
 ## Compression options object
 
@@ -60,5 +87,5 @@ final = client.wait_for_job(job_id, poll_interval=5, timeout=7200)
 - For public users, long-running real HPC jobs are usually best handled as
   submit-first workflows.
 - Use `wait_for_job` when you explicitly want a blocking script.
-- `stop_compression_job` maps to the public stop/cancel behavior and may return
-  `COMPLETED` status in public API semantics.
+- `stop_compression_job` is useful to accept current best results without waiting
+  for further optimization iterations.
