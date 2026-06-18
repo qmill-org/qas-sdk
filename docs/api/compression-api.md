@@ -261,24 +261,27 @@ Example response (`200 OK`):
 
 Use the golden-path script in `examples/compression_golden_path.py`.
 
+Default behavior is submit-first (no polling), which is recommended for long-running real HPC jobs.
+
 ```bash
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
   --circuit-file ./examples/example.qasm \
   --gate-set IBM-Eagle \
+  --output-json ./submit-job.json
+```
+
+To block and wait for terminal status in the same run, add `--wait`:
+
+```bash
+python examples/compression_golden_path.py \
+  --base-url https://qas.qmill.com \
+  --circuit-file ./examples/example.qasm \
+  --gate-set IBM-Eagle \
+  --wait \
   --poll-interval 5 \
   --timeout-seconds 7200 \
   --output-json ./final-job.json
-```
-
-For long-running real HPC jobs, submit first and poll later with:
-
-```bash
-python examples/compression_golden_path.py \
-  --base-url https://qas.qmill.com \
-  --circuit-file ./examples/example.qasm \
-  --gate-set IBM-Eagle \
-  --submit-only
 ```
 
 ## Support

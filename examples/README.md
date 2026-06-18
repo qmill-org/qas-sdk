@@ -63,10 +63,18 @@ Plan-aware default recommendation:
 - Prefer non-parallel real modes (`lumi_v1_6` or `aws_v1_6`) unless your
   account explicitly supports multi-GPU compression.
 
+Mode and wait guidance:
+
+| Goal | Recommended mode | Recommended golden-path behavior |
+| --- | --- | --- |
+| Fast local/API check | `demo` | submit + `--wait` |
+| Real compression on HPC | omit `QAS_HPC_MODE` (platform default) or set `lumi_v1_6`/`aws_v1_6` | submit only (default), poll later |
+| End-to-end synchronous run | real mode or `demo` | submit + `--wait` |
+
 ## Available Examples
 
-- `compression_golden_path.py` - recommended pilot-customer flow that submits a job, polls status,
-  and persists the full final payload.
+- `compression_golden_path.py` - recommended pilot-customer flow that submits a job first,
+  with optional polling to terminal status via `--wait`.
 - `sdk_walkthrough.py` - SDK-only Python script for submit, wait, and final payload retrieval.
 - `sdk_walkthrough.ipynb` - notebook version of the SDK-only flow for interactive exploration.
 - `sdk_and_api_walkthrough.py` — end-to-end Python script using both the SDK and raw REST calls.
@@ -89,13 +97,12 @@ Run from the repository root:
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
   --circuit-file ./examples/example.qasm \
-  --gate-set IBM-Eagle \
-  --poll-interval 5 \
-  --timeout-seconds 7200 \
-  --output-json ./final-job.json
+  --gate-set IBM-Eagle
 ```
 
 If `--gate-set` is omitted, the script defaults to `IBM-Eagle`.
+
+By default, golden-path runs in submit-first mode and does not poll.
 
 Authentication is loaded from your local `qas auth login` session.
 
@@ -113,14 +120,17 @@ python examples/compression_golden_path.py \
 
 For free-plan accounts, keep `--num-gpus 1` and avoid parallel mode slugs.
 
-For long-running real HPC jobs, you can submit without waiting and poll later:
+To wait for completion in the same run, add `--wait`:
 
 ```bash
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
   --circuit-file ./examples/example.qasm \
   --gate-set IBM-Eagle \
-  --submit-only
+  --wait \
+  --poll-interval 5 \
+  --timeout-seconds 7200 \
+  --output-json ./final-job.json
 ```
 
 Pass additional request fields with repeatable `--set key=value` flags.

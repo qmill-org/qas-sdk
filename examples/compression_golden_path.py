@@ -3,8 +3,8 @@
 
 Flow:
 1) Submit a compression job
-2) Poll job status until terminal
-3) Print and optionally persist the full final payload
+2) Optionally poll job status until terminal with --wait
+3) Print and optionally persist payloads
 """
 
 from __future__ import annotations
@@ -199,9 +199,9 @@ def main() -> int:
     parser.add_argument("--retry-count", type=int, default=5)
     parser.add_argument("--output-json", help="Write final job payload to file")
     parser.add_argument(
-        "--submit-only",
+        "--wait",
         action="store_true",
-        help="Submit the job and exit without polling for completion",
+        help="Poll for completion after submit (default behavior is submit-first, no polling)",
     )
 
     args = parser.parse_args()
@@ -249,8 +249,13 @@ def main() -> int:
         print("Submit response did not contain job_id.", file=sys.stderr)
         return 1
 
-    if args.submit_only:
-        print("Submit-only mode enabled; skipping polling.")
+    if not args.wait:
+        print("Submit complete. Skipping polling by default.")
+        print("Use --wait to poll this run until terminal status.")
+        if args.output_json:
+            with pathlib.Path(args.output_json).open("w", encoding="utf-8") as file_obj:
+                json.dump(submit_payload, file_obj, indent=2, ensure_ascii=False)
+            print(f"Saved submit payload to {args.output_json}")
         return 0
 
     poll_url = f"{base_url}/api/public/v1/circuit-compression/jobs/{job_id}"
