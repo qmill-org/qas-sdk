@@ -18,6 +18,8 @@ from typing import Any
 
 from qas_sdk.client import CompressionJobOptions, QASClient
 
+DEFAULT_GATE_SET = "IBM-Eagle"
+
 
 def _optional_int(name: str) -> int | None:
     raw = os.getenv(name)
@@ -28,6 +30,14 @@ def _optional_int(name: str) -> int | None:
     except ValueError as exc:  # pragma: no cover - defensive parsing
         msg = f"Environment variable {name} must be an integer"
         raise RuntimeError(msg) from exc
+
+
+def _normalized_gate_set_from_env() -> str | None:
+    raw = os.getenv("QAS_GATE_SET")
+    if raw is None:
+        return None
+    value = raw.strip()
+    return value if value else DEFAULT_GATE_SET
 
 
 def _print_json(title: str, payload: dict[str, Any]) -> None:
@@ -130,7 +140,7 @@ cx q[0],q[4];"""
 
     options = CompressionJobOptions(
         iteration_time_minutes=_optional_int("QAS_ITERATION_MINUTES"),
-        gate_set=os.getenv("QAS_GATE_SET"),
+        gate_set=_normalized_gate_set_from_env(),
         hpc_mode=os.getenv("QAS_HPC_MODE"),
     )
     if options.to_payload():

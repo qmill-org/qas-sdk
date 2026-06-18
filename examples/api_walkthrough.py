@@ -21,6 +21,7 @@ import requests
 
 POLL_INTERVAL_SECONDS = int(os.getenv("QAS_POLL_INTERVAL", "5"))
 POLL_TIMEOUT_SECONDS = int(os.getenv("QAS_POLL_TIMEOUT", "300"))
+DEFAULT_GATE_SET = "IBM-Eagle"
 
 
 def _optional_int(name: str) -> int | None:
@@ -32,6 +33,14 @@ def _optional_int(name: str) -> int | None:
     except ValueError as exc:  # pragma: no cover - defensive
         msg = f"Environment variable {name} must be an integer"
         raise RuntimeError(msg) from exc
+
+
+def _normalized_gate_set_from_env() -> str | None:
+    raw = os.getenv("QAS_GATE_SET")
+    if raw is None:
+        return None
+    value = raw.strip()
+    return value if value else DEFAULT_GATE_SET
 
 
 def _obtain_bearer_token() -> str:
@@ -65,7 +74,7 @@ def _build_job_payload(circuit: str) -> dict[str, Any]:
     if iteration_minutes is not None:
         payload["iteration_time_minutes"] = iteration_minutes
 
-    gate_set = os.getenv("QAS_GATE_SET")
+    gate_set = _normalized_gate_set_from_env()
     if gate_set:
         payload["gate_set"] = gate_set
 
