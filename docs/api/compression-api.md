@@ -264,7 +264,7 @@ Use the golden-path script in `examples/compression_golden_path.py`.
 ```bash
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
-  --circuit-file ./example.qasm \
+  --circuit-file ./examples/example.qasm \
   --poll-interval 5 \
   --timeout-seconds 7200 \
   --output-json ./final-job.json

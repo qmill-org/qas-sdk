@@ -88,7 +88,7 @@ Run from the repository root:
 ```bash
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
-  --circuit-file ./example.qasm \
+  --circuit-file ./examples/example.qasm \
   --poll-interval 5 \
   --timeout-seconds 7200 \
   --output-json ./final-job.json
@@ -101,7 +101,7 @@ Optional compression overrides:
 ```bash
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
-  --circuit-file ./example.qasm \
+  --circuit-file ./examples/example.qasm \
   --num-gpus 1 \
   --iteration-time-minutes 45 \
   --gate-set IBM-Eagle \
