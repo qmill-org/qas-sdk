@@ -50,11 +50,18 @@ cp examples/.env.example .env
 ```bash
 export QAS_BASE_URL=https://qas.qmill.com
 # Optional compression overrides (forwarded via SDK)
+# Free-plan guidance: keep GPU at 1 and prefer non-parallel real modes.
 # export QAS_NUM_GPUS=1
 # export QAS_ITERATION_MINUTES=45
 # export QAS_GATE_SET="IBM-Eagle"
 # export QAS_HPC_MODE="demo"
 ```
+
+Plan-aware default recommendation:
+
+- If your account is on free plan, use `num_gpus=1`.
+- Prefer non-parallel real modes (`lumi_v1_6` or `aws_v1_6`) unless your
+  account explicitly supports multi-GPU compression.
 
 ## Available Examples
 
@@ -100,6 +107,8 @@ python examples/compression_golden_path.py \
   --gate-set IBM-Eagle \
   --hpc-mode lumi_v1_6
 ```
+
+For free-plan accounts, keep `--num-gpus 1` and avoid parallel mode slugs.
 
 Pass additional request fields with repeatable `--set key=value` flags.
 
