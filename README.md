@@ -33,6 +33,19 @@ pip install git+https://github.com/qmill-org/qas-sdk.git
 pip install -e .
 ```
 
+## Development in Dev Containers
+
+This repository supports VS Code Dev Containers so development can follow the
+same container-first workflow used in QAS.
+
+1. Open the repository in VS Code.
+2. Run "Dev Containers: Reopen in Container".
+3. Wait for `.devcontainer/setup.sh` to finish.
+
+The setup installs development dependencies and pre-commit hooks inside the
+container. You do not need to create a local virtual environment when working
+inside the dev container.
+
 ## Launch on qBraid Lab (Optional)
 
 If this repository is launched from qBraid Explore, it is cloned into your Lab
