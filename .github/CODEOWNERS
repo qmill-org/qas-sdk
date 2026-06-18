@@ -1,0 +1,12 @@
+# Global default ownership
+* @jounipeltonen-qmill
+
+# CI and repository automation
+.github/workflows/* @jounipeltonen-qmill
+
+# Package source
+qas_sdk/* @jounipeltonen-qmill
+
+# Public docs and examples
+docs/* @jounipeltonen-qmill
+examples/* @jounipeltonen-qmill

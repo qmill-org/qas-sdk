@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerabilities
+    url: https://github.com/qmill-org/qas-sdk/security/advisories/new
+    about: Report vulnerabilities privately through GitHub security advisories.
+  - name: QMill support
+    url: mailto:support@qmill.com
+    about: Contact support for account or environment issues.
