@@ -97,3 +97,5 @@ pip install -e .
 ## Related documentation
 
 - [Authentication](authentication.md)
+- [SDK method reference](sdk-method-reference.md)
+- [Compression API](../api/compression-api.md)

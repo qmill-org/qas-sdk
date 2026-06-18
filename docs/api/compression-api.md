@@ -31,6 +31,10 @@ qas auth token
 
 Terminal statuses are `COMPLETED`, `FAILED`, and `CANCELLED`.
 
+Note: user-initiated stop requests are represented as `COMPLETED` in the public
+status field. In those cases, `result` may be empty if no compressed output was
+available when the stop was processed.
+
 ## Endpoints
 
 ### Submit compression job
@@ -249,6 +253,50 @@ Example response (`200 OK`):
   ]
 }
 ```
+
+### Stop or cancel a compression job
+
+Preferred endpoint: `POST /api/public/v1/circuit-compression/jobs/{job_id}/stop`
+
+Backward-compatible endpoint: `DELETE /api/public/v1/circuit-compression/jobs/{job_id}`
+
+Headers:
+
+- `Authorization: Bearer <token>`
+
+Behavior:
+
+- Intended for jobs in `SUBMITTED` or `RUNNING` state.
+- Returns acknowledgement payload with status and backend job id when available.
+- For public responses, stopped jobs are surfaced as `COMPLETED`.
+- If no partial/final result exists at stop time, `result` in subsequent
+  `GET /jobs/{job_id}` responses can be `null`.
+
+Example stop request:
+
+```bash
+curl -X POST https://qas.qmill.com/api/public/v1/circuit-compression/jobs/550e8400-e29b-41d4-a716-446655440000/stop \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+Example response (`200 OK`):
+
+```json
+{
+  "message": "Stop request sent for job 550e8400-e29b-41d4-a716-446655440000",
+  "lumi_job_id": "12345678",
+  "status": "COMPLETED"
+}
+```
+
+Error responses:
+
+- `400`: Job is not in a stoppable state, or backend identifier is missing
+- `401`: Missing or invalid token
+- `403`: Job does not belong to authenticated user
+- `404`: Job not found
+- `429`: Rate limit exceeded
+- `500`: Backend stop/cancel operation failed
 
 ### Polling and retries
 

@@ -112,6 +112,7 @@ print(f"Compressed circuit: {result['result']}")
 Full documentation available at:
 
 - [Installation Guide](docs/guides/qas-sdk-installation-guide.md)
+- [SDK Method Reference](docs/guides/sdk-method-reference.md)
 - [Examples](examples/README.md)
 - [API Documentation](docs/api/compression-api.md)
 
