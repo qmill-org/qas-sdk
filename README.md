@@ -71,7 +71,8 @@ For headless/minimal environments, use:
 qas auth login --base-url https://qas.qmill.com --no-browser
 ```
 
-3. To use the `qas-sdk` within Jupyter Notebooks, make sure to set your kernel to `Python 3 [QMill]`.
+> [!NOTE]
+> To use the `qas-sdk` within Jupyter Notebooks, set your kernel to `Python 3 [QMill]`.
 
 ## Quick Start
 
