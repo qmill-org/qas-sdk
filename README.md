@@ -48,13 +48,15 @@ inside the dev container.
 
 ## Launch on qBraid Lab (Optional)
 
-If this repository is launched from qBraid Explore, it is cloned into your Lab
-workspace. Then:
+[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com/explore/projects/qmill-qas-circuit-compression)
 
-1. Install the SDK:
+If this repository is launched from qBraid Explore, it is cloned into your Lab
+workspace, and the QMill QAS SDK environment will be installed automatically. From there:
+
+1. Open Terminal, and activate the QMill QAS environment:
 
 ```bash
-pip install qas-sdk
+qbraid envs activate "QMill QAS SDK"
 ```
 
 2. Authenticate:
@@ -68,6 +70,8 @@ For headless/minimal environments, use:
 ```bash
 qas auth login --base-url https://qas.qmill.com --no-browser
 ```
+
+3. To use the `qas-sdk` within Jupyter Notebooks, make sure to set your kernel to `Python 3 [QMill]`.
 
 ## Quick Start
 
