@@ -74,6 +74,7 @@ class CompressionJobOptions:
     num_gpus: int | None = None
     iteration_time_minutes: int | None = None
     gate_set: str | None = None
+    goal: str | None = None
     hpc_mode: str | None = None
 
     def to_payload(self) -> dict[str, Any]:
@@ -84,6 +85,8 @@ class CompressionJobOptions:
             payload["iteration_time_minutes"] = self.iteration_time_minutes
         if self.gate_set is not None:
             payload["gate_set"] = self.gate_set
+        if self.goal is not None:
+            payload["goal"] = self.goal
         if self.hpc_mode is not None:
             payload["hpc_mode"] = self.hpc_mode
         return payload
@@ -414,6 +417,7 @@ class QASClient:
         num_gpus: int | None = None,
         iteration_time_minutes: int | None = None,
         gate_set: str | None = None,
+        goal: str | None = None,
         hpc_mode: str | None = None,
         options: CompressionJobOptions | None = None,
     ) -> dict:
@@ -425,6 +429,7 @@ class QASClient:
             num_gpus: Optional number of GPUs to request for real backends
             iteration_time_minutes: Optional iteration time budget in minutes
             gate_set: Optional logical gate set slug (for example "IBM-Eagle")
+            goal: Optional compression objective (for example "depth" or "twoqubit")
             hpc_mode: Optional HPC mode override (for example "demo")
             options: Optional CompressionJobOptions bundle; individual kwargs override it
 
@@ -453,6 +458,8 @@ class QASClient:
             data["iteration_time_minutes"] = iteration_time_minutes
         if gate_set is not None:
             data["gate_set"] = gate_set
+        if goal is not None:
+            data["goal"] = goal
         if hpc_mode is not None:
             data["hpc_mode"] = hpc_mode
 
@@ -490,7 +497,20 @@ class QASClient:
             >>> print(job_info["status"])
             'STOPPED'
         """
-        return self._request("DELETE", self._compression_endpoint(f"/jobs/{job_id}"))
+        stop_endpoint = self._compression_endpoint(f"/jobs/{job_id}/stop")
+        try:
+            return self._request("POST", stop_endpoint)
+        except QASAPIError as exc:
+            # Keep compatibility with older API deployments that only exposed DELETE /jobs/{id}.
+            error_text = str(exc).lower()
+            if (
+                "not found" in error_text
+                or "method not allowed" in error_text
+                or "404" in error_text
+                or "405" in error_text
+            ):
+                return self._request("DELETE", self._compression_endpoint(f"/jobs/{job_id}"))
+            raise
 
     def cancel_compression_job(self, job_id: str) -> dict:
         """

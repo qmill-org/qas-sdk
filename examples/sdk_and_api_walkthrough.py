@@ -22,7 +22,7 @@ import requests
 
 from qas_sdk import CompressionJobOptions, QASClient
 
-DEFAULT_GATE_SET = "IBM-Eagle"
+DEFAULT_GATE_SET = "CX_RX_RZ"
 
 
 def _optional_int(name: str) -> int | None:

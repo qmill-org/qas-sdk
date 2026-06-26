@@ -21,7 +21,7 @@ import requests
 
 TERMINAL_STATUSES = {"COMPLETED", "FAILED", "CANCELLED"}
 DEFAULT_BASE_URL = "https://qas.qmill.com"
-DEFAULT_GATE_SET = "IBM-Eagle"
+DEFAULT_GATE_SET = "CX_RX_RZ"
 
 
 def _resolve_token(args: argparse.Namespace) -> str:

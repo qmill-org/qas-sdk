@@ -53,14 +53,14 @@ export QAS_BASE_URL=https://qas.qmill.com
 # Free-plan guidance: keep GPU at 1 and prefer non-parallel real modes.
 # export QAS_NUM_GPUS=1
 # export QAS_ITERATION_MINUTES=45
-# export QAS_GATE_SET="IBM-Eagle"
+# export QAS_GATE_SET="CX_RX_RZ"
 # export QAS_HPC_MODE="demo"
 ```
 
 Plan-aware default recommendation:
 
 - If your account is on free plan, use `num_gpus=1`.
-- Prefer non-parallel real modes (`lumi_v1_6` or `aws_v1_6`) unless your
+- Prefer non-parallel real modes (`lumi_v2_0` or `aws_v2_0`) unless your
   account explicitly supports multi-GPU compression.
 
 Mode and wait guidance:
@@ -68,7 +68,7 @@ Mode and wait guidance:
 | Goal | Recommended mode | Recommended golden-path behavior |
 | --- | --- | --- |
 | Fast local/API check | `demo` | submit + `--wait` |
-| Real compression on HPC | omit `QAS_HPC_MODE` (platform default) or set `lumi_v1_6`/`aws_v1_6` | submit only (default), poll later |
+| Real compression on HPC | omit `QAS_HPC_MODE` (platform default) or set `lumi_v2_0`/`aws_v2_0` | submit only (default), poll later |
 | End-to-end synchronous run | real mode or `demo` | submit + `--wait` |
 
 ## Available Examples
@@ -97,10 +97,10 @@ Run from the repository root:
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
   --circuit-file ./examples/example.qasm \
-  --gate-set IBM-Eagle
+  --gate-set CX_RX_RZ
 ```
 
-If `--gate-set` is omitted, the script defaults to `IBM-Eagle`.
+If `--gate-set` is omitted, the script defaults to `CX_RX_RZ`.
 
 By default, golden-path runs in submit-first mode and does not poll.
 
@@ -114,8 +114,8 @@ python examples/compression_golden_path.py \
   --circuit-file ./examples/example.qasm \
   --num-gpus 1 \
   --iteration-time-minutes 45 \
-  --gate-set IBM-Eagle \
-  --hpc-mode lumi_v1_6
+  --gate-set CX_RX_RZ \
+  --hpc-mode lumi_v2_0
 ```
 
 For free-plan accounts, keep `--num-gpus 1` and avoid parallel mode slugs.
@@ -126,7 +126,7 @@ To wait for completion in the same run, add `--wait`:
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
   --circuit-file ./examples/example.qasm \
-  --gate-set IBM-Eagle \
+  --gate-set CX_RX_RZ \
   --wait \
   --poll-interval 5 \
   --timeout-seconds 7200 \

@@ -21,7 +21,7 @@ import requests
 
 POLL_INTERVAL_SECONDS = int(os.getenv("QAS_POLL_INTERVAL", "5"))
 POLL_TIMEOUT_SECONDS = int(os.getenv("QAS_POLL_TIMEOUT", "300"))
-DEFAULT_GATE_SET = "IBM-Eagle"
+DEFAULT_GATE_SET = "CX_RX_RZ"
 
 
 def _optional_int(name: str) -> int | None:

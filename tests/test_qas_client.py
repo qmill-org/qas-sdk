@@ -316,6 +316,7 @@ class TestSDKMethods:
                 num_gpus=2,
                 iteration_time_minutes=90,
                 gate_set="IBM-Eagle",
+                goal="twoqubit",
                 hpc_mode="demo",
             )
 
@@ -328,6 +329,7 @@ class TestSDKMethods:
             "num_gpus": 2,
             "iteration_time_minutes": 90,
             "gate_set": "IBM-Eagle",
+            "goal": "twoqubit",
             "hpc_mode": "demo",
         }
 
@@ -338,6 +340,7 @@ class TestSDKMethods:
             num_gpus=4,
             iteration_time_minutes=30,
             gate_set="IonQ",
+            goal="depth",
             hpc_mode="aws_v1_5",
         )
 
@@ -347,6 +350,7 @@ class TestSDKMethods:
                 "OPENQASM 2.0;",
                 options=options,
                 num_gpus=1,
+                goal="total",
             )
 
         _, kwargs = mock_request.call_args
@@ -356,7 +360,45 @@ class TestSDKMethods:
         assert payload["num_gpus"] == 1
         assert payload["iteration_time_minutes"] == 30
         assert payload["gate_set"] == "IonQ"
+        assert payload["goal"] == "total"
         assert payload["hpc_mode"] == "aws_v1_5"
+
+    def test_stop_compression_prefers_post_stop_endpoint(self) -> None:
+        """stop_compression_job should use POST /jobs/{id}/stop on modern API deployments."""
+        client = QASClient(base_url="https://test.example.com", access_token="token")
+
+        with patch.object(client, "_request") as mock_request:
+            mock_request.return_value = {"status": "COMPLETED"}
+            client.stop_compression_job("job-123")
+
+        mock_request.assert_called_once_with(
+            "POST",
+            "/api/public/v1/circuit-compression/jobs/job-123/stop",
+        )
+
+    def test_stop_compression_falls_back_to_delete_for_legacy_api(self) -> None:
+        """stop_compression_job should fall back to DELETE /jobs/{id} for legacy API routes."""
+        client = QASClient(base_url="https://test.example.com", access_token="token")
+
+        with patch.object(client, "_request") as mock_request:
+            mock_request.side_effect = [
+                QASAPIError("API request failed: Not Found"),
+                {"status": "COMPLETED"},
+            ]
+            result = client.stop_compression_job("job-legacy")
+
+        assert result == {"status": "COMPLETED"}
+        assert mock_request.call_count == 2
+        first_call = mock_request.call_args_list[0].args
+        second_call = mock_request.call_args_list[1].args
+        assert first_call == (
+            "POST",
+            "/api/public/v1/circuit-compression/jobs/job-legacy/stop",
+        )
+        assert second_call == (
+            "DELETE",
+            "/api/public/v1/circuit-compression/jobs/job-legacy",
+        )
 
 
 if __name__ == "__main__":
