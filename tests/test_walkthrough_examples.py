@@ -1,21 +1,88 @@
 import subprocess
 
 import pytest
+import requests
 
+from examples import api_walkthrough
 from examples import sdk_and_api_walkthrough as walkthrough
 
 
-def _mock_response(payload: object) -> object:
+def _mock_response(payload: object, status_code: int = 200) -> object:
     class _Response:
-        status_code = 200
+        def __init__(self, status_code: int) -> None:
+            self.status_code = status_code
 
         def raise_for_status(self) -> None:
+            if self.status_code >= 400:
+                msg = f"HTTP {self.status_code}"
+                raise requests.HTTPError(msg)
             return None
 
         def json(self) -> object:
             return payload
 
-    return _Response()
+    return _Response(status_code)
+
+
+def test_api_walkthrough_poll_refreshes_token_after_401(monkeypatch: object) -> None:
+    """Polling should recover from token expiry by refreshing auth and retrying once."""
+    monkeypatch.setenv("QAS_BASE_URL", "https://example.test")
+    monkeypatch.setattr(api_walkthrough, "POLL_INTERVAL_SECONDS", 0)
+    monkeypatch.setattr(api_walkthrough, "POLL_TIMEOUT_SECONDS", 30)
+
+    token_calls: list[str] = []
+
+    def fake_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        _ = (args, kwargs)
+        token = f"token-{len(token_calls) + 1}"
+        token_calls.append(token)
+        return subprocess.CompletedProcess(
+            args=["qas", "auth", "token"],
+            returncode=0,
+            stdout=f"{token}\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(api_walkthrough.subprocess, "run", fake_run)
+
+    responses = [
+        _mock_response({"job_id": "job-123", "status": "SUBMITTED"}),
+        _mock_response({"detail": "Unauthorized"}, status_code=401),
+        _mock_response({"job_id": "job-123", "status": "COMPLETED", "result": "ok"}),
+    ]
+    request_calls: list[dict[str, object]] = []
+
+    def fake_request(
+        method: str,
+        url: str,
+        *,
+        headers: dict[str, str],
+        timeout: int,
+        **kwargs: object,
+    ) -> object:
+        request_calls.append(
+            {
+                "method": method,
+                "url": url,
+                "headers": headers,
+                "timeout": timeout,
+                "kwargs": kwargs,
+            }
+        )
+        return responses.pop(0)
+
+    monkeypatch.setattr(api_walkthrough.requests, "request", fake_request)
+
+    exit_code = api_walkthrough.main()
+
+    assert exit_code == 0
+    assert len(request_calls) == 3
+    assert request_calls[1]["method"] == "GET"
+    assert request_calls[2]["method"] == "GET"
+    assert (
+        request_calls[1]["headers"]["Authorization"] != request_calls[2]["headers"]["Authorization"]
+    )
+    assert len(token_calls) == 3
 
 
 def test_walkthrough_main_handles_api_call(monkeypatch: object) -> None:

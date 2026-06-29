@@ -63,6 +63,39 @@ def _obtain_bearer_token() -> str:
     return token
 
 
+def _auth_headers(base_headers: dict[str, str]) -> dict[str, str]:
+    headers = dict(base_headers)
+    headers["Authorization"] = f"Bearer {_obtain_bearer_token()}"
+    return headers
+
+
+def _request_with_fresh_auth(
+    method: str,
+    url: str,
+    *,
+    base_headers: dict[str, str],
+    timeout: int,
+    **kwargs: Any,
+) -> requests.Response:
+    response = requests.request(
+        method,
+        url,
+        headers=_auth_headers(base_headers),
+        timeout=timeout,
+        **kwargs,
+    )
+    if response.status_code == 401:
+        # Refresh via `qas auth token` and retry once for expired short-lived tokens.
+        response = requests.request(
+            method,
+            url,
+            headers=_auth_headers(base_headers),
+            timeout=timeout,
+            **kwargs,
+        )
+    return response
+
+
 def _build_job_payload(circuit: str) -> dict[str, Any]:
     payload: dict[str, Any] = {"circuit": circuit}
 
@@ -90,12 +123,17 @@ def _print_json(title: str, payload: dict[str, Any]) -> None:
     print(json.dumps(payload, indent=2, sort_keys=True))
 
 
-def _poll_job(base_url: str, job_id: str, headers: dict[str, str]) -> dict[str, Any]:
+def _poll_job(base_url: str, job_id: str, base_headers: dict[str, str]) -> dict[str, Any]:
     deadline = time.monotonic() + POLL_TIMEOUT_SECONDS
     job_url = f"{base_url}/api/public/v1/circuit-compression/jobs/{job_id}"
 
     while True:
-        response = requests.get(job_url, headers=headers, timeout=30)
+        response = _request_with_fresh_auth(
+            "GET",
+            job_url,
+            base_headers=base_headers,
+            timeout=30,
+        )
         response.raise_for_status()
         job_payload = response.json()
 
@@ -114,9 +152,7 @@ def main() -> int:
     base_url = os.getenv("QAS_BASE_URL", "https://qas.qmill.com").rstrip("/")
     print(f"Connecting to QAS at {base_url}")
 
-    access_token = _obtain_bearer_token()
-    headers = {
-        "Authorization": f"Bearer {access_token}",
+    base_headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
     }
@@ -205,9 +241,10 @@ def main() -> int:
     job_payload = _build_job_payload(mod5_4_circuit)
     _print_json("Submitting Compression Job", job_payload)
 
-    submission = requests.post(
+    submission = _request_with_fresh_auth(
+        "POST",
         f"{base_url}/api/public/v1/circuit-compression/jobs",
-        headers=headers,
+        base_headers=base_headers,
         json=job_payload,
         timeout=30,
     )
@@ -217,7 +254,7 @@ def main() -> int:
     _print_json("Submission Response", job_info)
 
     print(f"Polling job {job_id} every {POLL_INTERVAL_SECONDS}s...")
-    result_payload = _poll_job(base_url, job_id, headers)
+    result_payload = _poll_job(base_url, job_id, base_headers)
     _print_json("Final Job Payload", result_payload)
 
     print("\nAPI workflow complete. Job status:", result_payload.get("status"))
