@@ -48,14 +48,14 @@ jobs:
           python -m build
           python -m twine check dist/*
 
-      - name: Generate checksums
-        run: |
-          sha256sum dist/* > dist/SHA256SUMS.txt
-
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+
+      - name: Generate checksums
+        run: |
+          sha256sum dist/* > dist/SHA256SUMS.txt
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
