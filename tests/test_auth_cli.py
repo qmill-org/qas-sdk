@@ -16,7 +16,7 @@ def _write_state(path: Path, **overrides: object) -> None:
         "base_url": "https://qas.qmill.com",
         "keycloak_realm": "quantum-platform",
         "keycloak_client_id": "qas-cli",
-        "scope": "openid profile offline_access",
+        "scope": "openid",
         "access_token": "old_access",
         "refresh_token": "refresh_1",
         "access_token_expires_at": (datetime.now(UTC_TZ) - timedelta(minutes=5)).isoformat(),

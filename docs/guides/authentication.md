@@ -39,6 +39,12 @@ The CLI uses `qas-cli` as the default client ID. To override explicitly:
 qas auth login --client-id qas-cli
 ```
 
+The CLI requests `openid` by default. To opt in to long-lived offline tokens:
+
+```bash
+qas auth login --scope "openid offline_access"
+```
+
 In headless or minimal Linux environments where automatic browser opening is unavailable, use:
 
 ```bash
