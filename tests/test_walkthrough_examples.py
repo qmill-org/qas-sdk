@@ -27,6 +27,7 @@ def _mock_response(payload: object, status_code: int = 200) -> object:
 def test_api_walkthrough_poll_refreshes_token_after_401(monkeypatch: object) -> None:
     """Polling should recover from token expiry by refreshing auth and retrying once."""
     monkeypatch.setenv("QAS_BASE_URL", "https://example.test")
+    monkeypatch.setenv("QAS_WAIT_FOR_COMPLETION", "true")
     monkeypatch.setattr(api_walkthrough, "POLL_INTERVAL_SECONDS", 0)
     monkeypatch.setattr(api_walkthrough, "POLL_TIMEOUT_SECONDS", 30)
 
@@ -119,6 +120,12 @@ def test_walkthrough_main_handles_api_call(monkeypatch: object) -> None:
                 "status": "COMPLETED",
                 "original_gate_count": 42,
                 "compressed_gate_count": 21,
+            }
+
+        def get_compression_job(self, job_id: object) -> dict[str, object]:
+            return {
+                "job_id": job_id,
+                "status": "RUNNING",
             }
 
     monkeypatch.setattr(walkthrough, "QASClient", DummyClient)

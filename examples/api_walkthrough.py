@@ -43,6 +43,19 @@ def _normalized_gate_set_from_env() -> str | None:
     return value if value else DEFAULT_GATE_SET
 
 
+def _optional_bool(name: str) -> bool | None:
+    raw = os.getenv(name)
+    if raw is None:
+        return None
+    value = raw.strip().lower()
+    if value in {"1", "true", "yes", "y", "on"}:
+        return True
+    if value in {"0", "false", "no", "n", "off"}:
+        return False
+    msg = f"Environment variable {name} must be a boolean (true/false)"
+    raise RuntimeError(msg)
+
+
 def _obtain_bearer_token() -> str:
     try:
         result = subprocess.run(
@@ -253,11 +266,27 @@ def main() -> int:
     job_id = job_info["job_id"]
     _print_json("Submission Response", job_info)
 
-    print(f"Polling job {job_id} every {POLL_INTERVAL_SECONDS}s...")
-    result_payload = _poll_job(base_url, job_id, base_headers)
-    _print_json("Final Job Payload", result_payload)
+    hpc_mode = (job_payload.get("hpc_mode") or "").strip().lower()
+    wait_override = _optional_bool("QAS_WAIT_FOR_COMPLETION")
+    wait_for_completion = wait_override if wait_override is not None else hpc_mode == "demo"
 
-    print("\nAPI workflow complete. Job status:", result_payload.get("status"))
+    if wait_for_completion:
+        print(f"Polling job {job_id} every {POLL_INTERVAL_SECONDS}s...")
+        result_payload = _poll_job(base_url, job_id, base_headers)
+        _print_json("Final Job Payload", result_payload)
+        print("\nAPI workflow complete. Job status:", result_payload.get("status"))
+    else:
+        print("Submit-only mode enabled (default for non-demo hpc_mode).")
+        snapshot = _request_with_fresh_auth(
+            "GET",
+            f"{base_url}/api/public/v1/circuit-compression/jobs/{job_id}",
+            base_headers=base_headers,
+            timeout=30,
+        )
+        snapshot.raise_for_status()
+        _print_json("Job Status Snapshot", snapshot.json())
+        print("\nAPI workflow complete. Job is submitted; check status later if still RUNNING.")
+
     return 0
 
 

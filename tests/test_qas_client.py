@@ -94,6 +94,42 @@ class TestQASClient:
 
         assert client._access_token is None
 
+    def test_init_loads_stored_tokens_with_non_default_client_id(self) -> None:
+        """When client_id is not explicit, load stored tokens for same base+realm."""
+        stored = {
+            "base_url": "https://qas-dev.example.com",
+            "keycloak_realm": "quantum-platform-dev",
+            "keycloak_client_id": "qas-cli",
+            "access_token": "stored_access",
+            "refresh_token": "stored_refresh",
+            "access_token_expires_at": "2030-01-01T00:00:00+00:00",
+        }
+
+        with patch("qas_sdk.client.load_auth_state", return_value=stored):
+            client = QASClient(base_url="https://qas-dev.example.com")
+
+        assert client._access_token == "stored_access"
+        assert client._refresh_token == "stored_refresh"
+        assert client._auth_flow == "external"
+        assert client.keycloak_client_id == "qas-cli"
+
+    def test_init_still_requires_explicit_client_id_match(self) -> None:
+        """Explicit client_id should keep strict matching against stored auth."""
+        stored = {
+            "base_url": "https://qas-dev.example.com",
+            "keycloak_realm": "quantum-platform-dev",
+            "keycloak_client_id": "qas-cli",
+            "access_token": "stored_access",
+        }
+
+        with patch("qas_sdk.client.load_auth_state", return_value=stored):
+            client = QASClient(
+                base_url="https://qas-dev.example.com",
+                keycloak_client_id="quantum-app",
+            )
+
+        assert client._access_token is None
+
     def test_refresh_access_token_client_credentials(self) -> None:
         """Refreshing client-credential tokens requests a new token."""
         client = QASClient(

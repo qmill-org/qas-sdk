@@ -75,12 +75,12 @@ Mode and wait guidance:
 
 - `compression_golden_path.py` - recommended pilot-customer flow that submits a job first,
   with optional polling to terminal status via `--wait`.
-- `sdk_walkthrough.py` - SDK-only Python script for submit, wait, and final payload retrieval.
+- `sdk_walkthrough.py` - SDK-only Python script; submit-first by default for non-demo modes, optional wait.
 - `sdk_walkthrough.ipynb` - notebook version of the SDK-only flow for interactive exploration.
-- `sdk_and_api_walkthrough.py` — end-to-end Python script using both the SDK and raw REST calls.
+- `sdk_and_api_walkthrough.py` — end-to-end Python script using both the SDK and raw REST calls (submit-first by default for non-demo modes).
 - `sdk_and_api_walkthrough.ipynb` — notebook variant with the same flow and rich output.
-- `api_walkthrough.py` — REST-only Python script for submitting and polling compression jobs
-  without the SDK.
+- `api_walkthrough.py` — REST-only Python script for submitting compression jobs
+  without the SDK (submit-first by default for non-demo modes).
 - `api_walkthrough.ipynb` — notebook version of the REST-only flow for interactive exploration.
 
 All examples authenticate via the local CLI session (`qas auth login`) and submit a compression job.
@@ -149,7 +149,7 @@ cd examples
 python sdk_and_api_walkthrough.py
 ```
 
-The script prints SDK responses, the compressed circuit, and the raw JSON fetched via `requests`.
+The script prints SDK/API status snapshots by default, and can wait for completion when requested.
 
 ### Running the API-Only Script
 
@@ -159,6 +159,13 @@ python api_walkthrough.py
 ```
 
 Ensure `qas auth login --base-url https://qas.qmill.com` has completed successfully.
+
+By default this script submits first and prints a status snapshot for non-demo
+modes. To block until terminal status in the same run, set:
+
+```bash
+export QAS_WAIT_FOR_COMPLETION=true
+```
 
 ## Running the Notebook
 

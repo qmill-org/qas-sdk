@@ -144,12 +144,13 @@ class QASClient:
         self.compression_api_prefix = compression_api_prefix.rstrip("/")
         self._auth_flow: str | None = None
         self._persist_external_tokens = False
+        self._keycloak_client_id_explicit = keycloak_client_id is not None
 
         # Auto-detect realm and client_id based on environment if not provided
         self.keycloak_realm = keycloak_realm or default_realm_for_base_url(self.base_url)
 
         if keycloak_client_id is None:
-            self.keycloak_client_id = "quantum-app"  # Updated default
+            self.keycloak_client_id = "quantum-app"
         else:
             self.keycloak_client_id = keycloak_client_id
 
@@ -186,13 +187,26 @@ class QASClient:
         if not state:
             return
 
-        if not is_state_match(
-            state,
-            base_url=self.base_url,
-            keycloak_realm=self.keycloak_realm,
-            keycloak_client_id=self.keycloak_client_id,
-        ):
-            return
+        # If client ID was not explicitly configured, adopt the stored one for
+        # the matching base_url+realm so CLI logins via alternate client IDs
+        # (for example qas-cli) are usable by default SDK flows.
+        if self._keycloak_client_id_explicit:
+            if not is_state_match(
+                state,
+                base_url=self.base_url,
+                keycloak_realm=self.keycloak_realm,
+                keycloak_client_id=self.keycloak_client_id,
+            ):
+                return
+        else:
+            if (
+                state.get("base_url") != self.base_url
+                or state.get("keycloak_realm") != self.keycloak_realm
+            ):
+                return
+            stored_client_id = state.get("keycloak_client_id")
+            if isinstance(stored_client_id, str) and stored_client_id:
+                self.keycloak_client_id = stored_client_id
 
         access_token = state.get("access_token")
         if not isinstance(access_token, str) or not access_token:

@@ -36,6 +36,19 @@ def _optional_int(name: str) -> int | None:
         raise RuntimeError(msg) from exc
 
 
+def _optional_bool(name: str) -> bool | None:
+    raw = os.getenv(name)
+    if raw is None:
+        return None
+    value = raw.strip().lower()
+    if value in {"1", "true", "yes", "y", "on"}:
+        return True
+    if value in {"0", "false", "no", "n", "off"}:
+        return False
+    msg = f"Environment variable {name} must be a boolean (true/false)"
+    raise RuntimeError(msg)
+
+
 def _normalized_gate_set_from_env() -> str | None:
     raw = os.getenv("QAS_GATE_SET")
     if raw is None:
@@ -179,9 +192,23 @@ cx q[0],q[4];"""
     job_id = job["job_id"]
     print(f"Job submitted with ID: {job_id}")
 
-    result = client.wait_for_job(job_id, poll_interval=5, timeout=600)
-    print("Compression completed via SDK.")
-    _print_json("SDK Result", result)
+    hpc_mode = (options.hpc_mode or "").strip().lower()
+    wait_override = _optional_bool("QAS_WAIT_FOR_COMPLETION")
+    wait_for_completion = wait_override if wait_override is not None else hpc_mode == "demo"
+
+    if wait_for_completion:
+        poll_interval = _optional_int("QAS_POLL_INTERVAL_SECONDS") or 5
+        timeout_seconds = _optional_int("QAS_WAIT_TIMEOUT_SECONDS") or 600
+        print(
+            f"Waiting for completion (poll_interval={poll_interval}s, timeout={timeout_seconds}s)..."
+        )
+        result = client.wait_for_job(job_id, poll_interval=poll_interval, timeout=timeout_seconds)
+        print("Compression completed via SDK.")
+        _print_json("SDK Result", result)
+    else:
+        print("Submit-only mode enabled (default for non-demo hpc_mode).")
+        snapshot = client.get_compression_job(job_id)
+        _print_json("SDK Job Status Snapshot", snapshot)
 
     print("\nRequesting job payload directly via REST API...")
     auth_header = f"Bearer {_cli_token()}"
