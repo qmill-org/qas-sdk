@@ -4,6 +4,13 @@ All notable changes to the QAS SDK will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-06-30
+
+### Fixed
+
+- Corrected `qas_sdk.__version__` to report `0.1.6` to match the published package version.
+- Updated release workflow ordering to publish to PyPI before generating `SHA256SUMS.txt`, preventing non-distribution files from being uploaded to PyPI.
+
 ## [0.1.5] - 2026-06-30
 
 ### Changed

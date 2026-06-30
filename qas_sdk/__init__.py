@@ -5,7 +5,7 @@ A Python library for interacting with the QAS platform for quantum circuit
 compression using LUMI supercomputer and AWS Braket quantum devices.
 """
 
-__version__ = "0.1.4"
+__version__ = "0.1.6"
 
 from .client import (
     CompressionJobOptions,
