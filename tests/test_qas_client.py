@@ -67,7 +67,7 @@ class TestQASClient:
         stored = {
             "base_url": "https://test.example.com",
             "keycloak_realm": "quantum-platform",
-            "keycloak_client_id": "quantum-app",
+            "keycloak_client_id": "qas-cli",
             "access_token": "stored_access",
             "refresh_token": "stored_refresh",
             "access_token_expires_at": "2030-01-01T00:00:00+00:00",
@@ -85,12 +85,48 @@ class TestQASClient:
         stored = {
             "base_url": "https://other.example.com",
             "keycloak_realm": "quantum-platform",
-            "keycloak_client_id": "quantum-app",
+            "keycloak_client_id": "qas-cli",
             "access_token": "stored_access",
         }
 
         with patch("qas_sdk.client.load_auth_state", return_value=stored):
             client = QASClient(base_url="https://test.example.com")
+
+        assert client._access_token is None
+
+    def test_init_loads_stored_tokens_with_non_default_client_id(self) -> None:
+        """When client_id is not explicit, load stored tokens for same base+realm."""
+        stored = {
+            "base_url": "https://qas-dev.example.com",
+            "keycloak_realm": "quantum-platform-dev",
+            "keycloak_client_id": "qas-cli",
+            "access_token": "stored_access",
+            "refresh_token": "stored_refresh",
+            "access_token_expires_at": "2030-01-01T00:00:00+00:00",
+        }
+
+        with patch("qas_sdk.client.load_auth_state", return_value=stored):
+            client = QASClient(base_url="https://qas-dev.example.com")
+
+        assert client._access_token == "stored_access"
+        assert client._refresh_token == "stored_refresh"
+        assert client._auth_flow == "external"
+        assert client.keycloak_client_id == "qas-cli"
+
+    def test_init_still_requires_explicit_client_id_match(self) -> None:
+        """Explicit client_id should keep strict matching against stored auth."""
+        stored = {
+            "base_url": "https://qas-dev.example.com",
+            "keycloak_realm": "quantum-platform-dev",
+            "keycloak_client_id": "quantum-app",
+            "access_token": "stored_access",
+        }
+
+        with patch("qas_sdk.client.load_auth_state", return_value=stored):
+            client = QASClient(
+                base_url="https://qas-dev.example.com",
+                keycloak_client_id="qas-cli",
+            )
 
         assert client._access_token is None
 
@@ -316,6 +352,7 @@ class TestSDKMethods:
                 num_gpus=2,
                 iteration_time_minutes=90,
                 gate_set="IBM-Eagle",
+                goal="twoqubit",
                 hpc_mode="demo",
             )
 
@@ -328,6 +365,7 @@ class TestSDKMethods:
             "num_gpus": 2,
             "iteration_time_minutes": 90,
             "gate_set": "IBM-Eagle",
+            "goal": "twoqubit",
             "hpc_mode": "demo",
         }
 
@@ -338,6 +376,7 @@ class TestSDKMethods:
             num_gpus=4,
             iteration_time_minutes=30,
             gate_set="IonQ",
+            goal="depth",
             hpc_mode="aws_v1_5",
         )
 
@@ -347,6 +386,7 @@ class TestSDKMethods:
                 "OPENQASM 2.0;",
                 options=options,
                 num_gpus=1,
+                goal="total",
             )
 
         _, kwargs = mock_request.call_args
@@ -356,7 +396,45 @@ class TestSDKMethods:
         assert payload["num_gpus"] == 1
         assert payload["iteration_time_minutes"] == 30
         assert payload["gate_set"] == "IonQ"
+        assert payload["goal"] == "total"
         assert payload["hpc_mode"] == "aws_v1_5"
+
+    def test_stop_compression_prefers_post_stop_endpoint(self) -> None:
+        """stop_compression_job should use POST /jobs/{id}/stop on modern API deployments."""
+        client = QASClient(base_url="https://test.example.com", access_token="token")
+
+        with patch.object(client, "_request") as mock_request:
+            mock_request.return_value = {"status": "COMPLETED"}
+            client.stop_compression_job("job-123")
+
+        mock_request.assert_called_once_with(
+            "POST",
+            "/api/public/v1/circuit-compression/jobs/job-123/stop",
+        )
+
+    def test_stop_compression_falls_back_to_delete_for_legacy_api(self) -> None:
+        """stop_compression_job should fall back to DELETE /jobs/{id} for legacy API routes."""
+        client = QASClient(base_url="https://test.example.com", access_token="token")
+
+        with patch.object(client, "_request") as mock_request:
+            mock_request.side_effect = [
+                QASAPIError("API request failed: Not Found"),
+                {"status": "COMPLETED"},
+            ]
+            result = client.stop_compression_job("job-legacy")
+
+        assert result == {"status": "COMPLETED"}
+        assert mock_request.call_count == 2
+        first_call = mock_request.call_args_list[0].args
+        second_call = mock_request.call_args_list[1].args
+        assert first_call == (
+            "POST",
+            "/api/public/v1/circuit-compression/jobs/job-legacy/stop",
+        )
+        assert second_call == (
+            "DELETE",
+            "/api/public/v1/circuit-compression/jobs/job-legacy",
+        )
 
 
 if __name__ == "__main__":

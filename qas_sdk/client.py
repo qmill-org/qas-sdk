@@ -74,6 +74,7 @@ class CompressionJobOptions:
     num_gpus: int | None = None
     iteration_time_minutes: int | None = None
     gate_set: str | None = None
+    goal: str | None = None
     hpc_mode: str | None = None
 
     def to_payload(self) -> dict[str, Any]:
@@ -84,6 +85,8 @@ class CompressionJobOptions:
             payload["iteration_time_minutes"] = self.iteration_time_minutes
         if self.gate_set is not None:
             payload["gate_set"] = self.gate_set
+        if self.goal is not None:
+            payload["goal"] = self.goal
         if self.hpc_mode is not None:
             payload["hpc_mode"] = self.hpc_mode
         return payload
@@ -141,12 +144,13 @@ class QASClient:
         self.compression_api_prefix = compression_api_prefix.rstrip("/")
         self._auth_flow: str | None = None
         self._persist_external_tokens = False
+        self._keycloak_client_id_explicit = keycloak_client_id is not None
 
         # Auto-detect realm and client_id based on environment if not provided
         self.keycloak_realm = keycloak_realm or default_realm_for_base_url(self.base_url)
 
         if keycloak_client_id is None:
-            self.keycloak_client_id = "quantum-app"  # Updated default
+            self.keycloak_client_id = "qas-cli"
         else:
             self.keycloak_client_id = keycloak_client_id
 
@@ -183,13 +187,26 @@ class QASClient:
         if not state:
             return
 
-        if not is_state_match(
-            state,
-            base_url=self.base_url,
-            keycloak_realm=self.keycloak_realm,
-            keycloak_client_id=self.keycloak_client_id,
-        ):
-            return
+        # If client ID was not explicitly configured, adopt the stored one for
+        # the matching base_url+realm so CLI logins via alternate client IDs
+        # (for example qas-cli) are usable by default SDK flows.
+        if self._keycloak_client_id_explicit:
+            if not is_state_match(
+                state,
+                base_url=self.base_url,
+                keycloak_realm=self.keycloak_realm,
+                keycloak_client_id=self.keycloak_client_id,
+            ):
+                return
+        else:
+            if (
+                state.get("base_url") != self.base_url
+                or state.get("keycloak_realm") != self.keycloak_realm
+            ):
+                return
+            stored_client_id = state.get("keycloak_client_id")
+            if isinstance(stored_client_id, str) and stored_client_id:
+                self.keycloak_client_id = stored_client_id
 
         access_token = state.get("access_token")
         if not isinstance(access_token, str) or not access_token:
@@ -414,6 +431,7 @@ class QASClient:
         num_gpus: int | None = None,
         iteration_time_minutes: int | None = None,
         gate_set: str | None = None,
+        goal: str | None = None,
         hpc_mode: str | None = None,
         options: CompressionJobOptions | None = None,
     ) -> dict:
@@ -425,6 +443,7 @@ class QASClient:
             num_gpus: Optional number of GPUs to request for real backends
             iteration_time_minutes: Optional iteration time budget in minutes
             gate_set: Optional logical gate set slug (for example "IBM-Eagle")
+            goal: Optional compression objective (for example "depth" or "twoqubit")
             hpc_mode: Optional HPC mode override (for example "demo")
             options: Optional CompressionJobOptions bundle; individual kwargs override it
 
@@ -453,6 +472,8 @@ class QASClient:
             data["iteration_time_minutes"] = iteration_time_minutes
         if gate_set is not None:
             data["gate_set"] = gate_set
+        if goal is not None:
+            data["goal"] = goal
         if hpc_mode is not None:
             data["hpc_mode"] = hpc_mode
 
@@ -490,7 +511,20 @@ class QASClient:
             >>> print(job_info["status"])
             'STOPPED'
         """
-        return self._request("DELETE", self._compression_endpoint(f"/jobs/{job_id}"))
+        stop_endpoint = self._compression_endpoint(f"/jobs/{job_id}/stop")
+        try:
+            return self._request("POST", stop_endpoint)
+        except QASAPIError as exc:
+            # Keep compatibility with older API deployments that only exposed DELETE /jobs/{id}.
+            error_text = str(exc).lower()
+            if (
+                "not found" in error_text
+                or "method not allowed" in error_text
+                or "404" in error_text
+                or "405" in error_text
+            ):
+                return self._request("DELETE", self._compression_endpoint(f"/jobs/{job_id}"))
+            raise
 
     def cancel_compression_job(self, job_id: str) -> dict:
         """

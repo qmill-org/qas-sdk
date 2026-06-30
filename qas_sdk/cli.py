@@ -30,8 +30,8 @@ def _add_auth_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
     login = auth_subparsers.add_parser("login", help="Login via device code flow")
     login.add_argument("--base-url", default="https://qas.qmill.com")
     login.add_argument("--realm", default=None)
-    login.add_argument("--client-id", default="quantum-app")
-    login.add_argument("--scope", default="openid profile offline_access")
+    login.add_argument("--client-id", default="qas-cli")
+    login.add_argument("--scope", default="openid")
     login.add_argument("--no-browser", action="store_true")
 
     auth_subparsers.add_parser("status", help="Show current auth state")

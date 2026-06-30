@@ -69,7 +69,7 @@ client = QASClient(base_url="https://qas.qmill.com")
 options = CompressionJobOptions(
     num_gpus=1,
     iteration_time_minutes=45,
-    gate_set="IBM-Eagle",
+  gate_set="CX_RX_RZ",
 )
 
 job = client.submit_compression(circuit_text, options=options)

@@ -54,29 +54,50 @@ Request fields:
 | `num_gpus` | `integer` | No | `1` | Number of GPUs requested for compression. |
 | `iteration_time_minutes` | `integer` | No | `60` | Requested iteration time budget, in minutes. |
 | `gate_set` | `string` | No | backend default | Optional gate set identifier passed to the backend. |
+| `goal` | `string` | No | `depth` | Optional compression objective (`depth`, `twoqubit`, `total`). |
 | `hpc_mode` | `string` | No | platform runtime mode | Optional HPC mode override for job submission. |
 
 Current `hpc_mode` options:
 
 - `demo`
+- `lumi_v2_0`
+- `lumi_v2_0_parallel`
+- `aws_v2_0`
+- `aws_v2_0_parallel`
+
+Additional legacy mode values currently accepted by the backend:
+
 - `lumi_v1_6`
 - `lumi_v1_6_parallel`
 - `aws_v1_6`
 - `aws_v1_6_parallel`
-
-Additional legacy mode values currently accepted by the backend:
-
-- `lumi_v1_0`
 - `lumi_v1_5`
-- `aws_v1_0`
 - `aws_v1_5`
+- `lumi_v1_0`
+- `aws_v1_0`
 
 Current `gate_set` options by mode:
 
+- For `lumi_v2_0`, `lumi_v2_0_parallel`, `aws_v2_0`, and `aws_v2_0_parallel`:
+  `CX_RX_RZ`, `CZ_RX_RZ`, `RXX_RX_RZ`, `RZZ_RX_RZ`
 - For `demo`, `lumi_v1_6`, `lumi_v1_6_parallel`, `aws_v1_6`, and `aws_v1_6_parallel`:
   `IBM-Eagle`, `IQM`, `Rigetti`, `IonQ`, `IonQ Forte`, `Quantinuum`
 - For legacy `lumi_v1_0` and `aws_v1_0`:
   `IBM-Eagle`, `Rigetti`, `IonQ`
+
+Compatibility note:
+
+- Legacy gate-set labels (for example `IBM-Eagle`) are normalized server-side when supported.
+- For predictable v2.0 behavior, prefer the explicit v2.0 gate-set codes above.
+
+Goal parameter usage:
+
+- `depth`: prioritize reducing circuit depth (default).
+- `twoqubit`: prioritize reducing two-qubit gate count.
+- `total`: prioritize reducing total gate count.
+- Accepted input aliases are normalized server-side (`two qubit gate counts`, `two-qubit gate counts`,
+  `total gate counts`, `total-gate-counts`).
+- If omitted, goal defaults to `depth`.
 
 Current constraints:
 
@@ -88,8 +109,9 @@ Current constraints:
     the account has multi-GPU entitlement; otherwise, the API
     returns `403`.
   - In practice, free-tier accounts should submit with `num_gpus = 1`.
-    For widest compatibility, use non-parallel real modes (`lumi_v1_6`
-    or `aws_v1_6`) unless your account has explicit multi-GPU entitlement.
+    For widest compatibility, use non-parallel real modes (`lumi_v2_0`
+    or `aws_v2_0`) unless your account has explicit multi-GPU entitlement.
+  - To preserve legacy v1.6 behavior, set `hpc_mode` explicitly to `lumi_v1_6` or `aws_v1_6`.
 - `iteration_time_minutes`:
   - Default is `60`.
   - Public API enforces a maximum value of `360` (6 hours).
@@ -105,6 +127,8 @@ Plan and entitlement behavior (production backend):
 - If entitlement is missing, submit returns `403` with an entitlement message.
 - Parallel mode slugs (`lumi_v1_6_parallel`, `aws_v1_6_parallel`) are real,
   billable modes; for free-tier onboarding, prefer single-GPU non-parallel modes.
+- Parallel mode slugs (`lumi_v2_0_parallel`, `aws_v2_0_parallel`) follow the same
+  entitlement and billing rules as v1.6 parallel modes.
 
 Example request:
 
@@ -113,8 +137,9 @@ Example request:
   "circuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[3];\ncreg c[3];\nh q[0];\ncx q[0], q[1];\ncx q[1], q[2];\nmeasure q -> c;",
   "num_gpus": 1,
   "iteration_time_minutes": 45,
-  "gate_set": "IBM-Eagle",
-  "hpc_mode": "lumi_v1_6"
+  "gate_set": "CX_RX_RZ",
+  "goal": "twoqubit",
+  "hpc_mode": "lumi_v2_0"
 }
 ```
 
@@ -136,6 +161,7 @@ Error responses:
 - `401`: Missing or invalid token
 - `402`: Insufficient credits
 - `403`: Entitlement restriction (for example multi-GPU not allowed)
+- `429`: Public API rate limit exceeded (see `Retry-After` header)
 - `500`: Backend submission failed
 
 ### Credit usage and charging
@@ -213,6 +239,7 @@ Error responses:
 - `401`: Missing or invalid token
 - `403`: Job does not belong to authenticated user
 - `404`: Job not found
+- `429`: Public API rate limit exceeded (see `Retry-After` header)
 
 Example curl:
 
@@ -234,6 +261,12 @@ Query parameters:
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `limit` | `integer` | No | `50` | Maximum number of jobs returned. |
+
+Rate limiting:
+
+- Public compression endpoints are rate-limited and may return `429` with a
+  `Retry-After` header.
+- Apply retry with backoff for `429` and transient `5xx` responses.
 
 Example response (`200 OK`):
 
@@ -257,6 +290,11 @@ Example response (`200 OK`):
 ### Stop or cancel a compression job
 
 Preferred endpoint: `POST /api/public/v1/circuit-compression/jobs/{job_id}/stop`
+
+Compatibility note:
+
+- Some older deployments also support `DELETE /api/public/v1/circuit-compression/jobs/{job_id}`.
+- SDK versions before the stop endpoint migration may still use the legacy delete path.
 
 Headers:
 
@@ -322,7 +360,7 @@ Default behavior is submit-first (no polling), which is recommended for long-run
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
   --circuit-file ./examples/example.qasm \
-  --gate-set IBM-Eagle \
+  --gate-set CX_RX_RZ \
   --output-json ./submit-job.json
 ```
 
@@ -332,7 +370,7 @@ To block and wait for terminal status in the same run, add `--wait`:
 python examples/compression_golden_path.py \
   --base-url https://qas.qmill.com \
   --circuit-file ./examples/example.qasm \
-  --gate-set IBM-Eagle \
+  --gate-set CX_RX_RZ \
   --wait \
   --poll-interval 5 \
   --timeout-seconds 7200 \
