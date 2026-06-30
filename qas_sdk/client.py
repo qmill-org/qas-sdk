@@ -150,7 +150,7 @@ class QASClient:
         self.keycloak_realm = keycloak_realm or default_realm_for_base_url(self.base_url)
 
         if keycloak_client_id is None:
-            self.keycloak_client_id = "quantum-app"
+            self.keycloak_client_id = "qas-cli"
         else:
             self.keycloak_client_id = keycloak_client_id
 

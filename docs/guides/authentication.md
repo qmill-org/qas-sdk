@@ -33,6 +33,12 @@ Use the supported public method:
 qas auth login
 ```
 
+The CLI uses `qas-cli` as the default client ID. To override explicitly:
+
+```bash
+qas auth login --client-id qas-cli
+```
+
 In headless or minimal Linux environments where automatic browser opening is unavailable, use:
 
 ```bash
@@ -47,7 +53,7 @@ qas auth status
 
 The SDK automatically loads the persisted CLI session and refreshes tokens when possible.
 
-If you receive `401 Unauthorized: Invalid audience`, validate that the token includes `quantum-app` in `aud`.
+If you receive `401 Unauthorized: Invalid audience`, validate that the token includes the audience expected by your API deployment (for many environments this is `quantum-app`).
 
 ## Troubleshooting
 

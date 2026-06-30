@@ -67,7 +67,7 @@ class TestQASClient:
         stored = {
             "base_url": "https://test.example.com",
             "keycloak_realm": "quantum-platform",
-            "keycloak_client_id": "quantum-app",
+            "keycloak_client_id": "qas-cli",
             "access_token": "stored_access",
             "refresh_token": "stored_refresh",
             "access_token_expires_at": "2030-01-01T00:00:00+00:00",
@@ -85,7 +85,7 @@ class TestQASClient:
         stored = {
             "base_url": "https://other.example.com",
             "keycloak_realm": "quantum-platform",
-            "keycloak_client_id": "quantum-app",
+            "keycloak_client_id": "qas-cli",
             "access_token": "stored_access",
         }
 
@@ -118,14 +118,14 @@ class TestQASClient:
         stored = {
             "base_url": "https://qas-dev.example.com",
             "keycloak_realm": "quantum-platform-dev",
-            "keycloak_client_id": "qas-cli",
+            "keycloak_client_id": "quantum-app",
             "access_token": "stored_access",
         }
 
         with patch("qas_sdk.client.load_auth_state", return_value=stored):
             client = QASClient(
                 base_url="https://qas-dev.example.com",
-                keycloak_client_id="quantum-app",
+                keycloak_client_id="qas-cli",
             )
 
         assert client._access_token is None

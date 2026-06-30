@@ -15,7 +15,7 @@ def _write_state(path: Path, **overrides: object) -> None:
     state: dict[str, object] = {
         "base_url": "https://qas.qmill.com",
         "keycloak_realm": "quantum-platform",
-        "keycloak_client_id": "quantum-app",
+        "keycloak_client_id": "qas-cli",
         "scope": "openid profile offline_access",
         "access_token": "old_access",
         "refresh_token": "refresh_1",
@@ -32,7 +32,7 @@ def test_auth_state_roundtrip(tmp_path: Path) -> None:
     payload = {
         "base_url": "https://qas.qmill.com",
         "keycloak_realm": "quantum-platform",
-        "keycloak_client_id": "quantum-app",
+        "keycloak_client_id": "qas-cli",
         "access_token": "token-1",
         "refresh_token": "refresh-1",
         "access_token_expires_at": "2030-01-01T00:00:00+00:00",
