@@ -4,7 +4,7 @@ requires = [ "setuptools>=61", "wheel" ]
 
 [project]
 name = "qas-sdk"
-version = "0.1.5"
+version = "0.1.6"
 description = "Python SDK for QAS Circuit Compression API"
 readme = "README.md"
 keywords = [ "circuit compression", "optimization", "qas", "quantum", "quantum computing" ]
